@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Panel – WebDev Project</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+body{font-family:'Poppins',sans-serif;background:#f4f6fc;margin:0;padding:0;}
+header{background:#0d47a1;color:white;padding:20px;text-align:center;}
+.container{max-width:1000px;margin:40px auto;padding:20px;background:white;border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,0.1);}
+h2{margin-bottom:20px;color:#0d47a1;}
+form{display:grid;gap:15px;}
+form label{font-weight:600;}
+form input, form textarea{padding:10px;border-radius:8px;border:1px solid #ccc;width:100%;font-size:16px;resize:none;}
+form button{padding:12px;background:#0d47a1;color:white;border:none;font-weight:600;border-radius:8px;cursor:pointer;transition:background 0.3s;}
+form button:hover{background:#1976d2;}
+.section{margin-bottom:40px;border-bottom:1px solid #eee;padding-bottom:20px;}
+.success-msg{color:green;font-weight:600;margin-top:10px;}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Admin Panel – WebDev Project</h1>
+</header>
+
+<div class="container">
+  <div class="section">
+    <h2>Hero Section</h2>
+    <form id="hero-form">
+      <label>Title</label>
+      <input type="text" id="hero-title">
+      <label>Description</label>
+      <textarea id="hero-desc" rows="3"></textarea>
+      <label>Button Text</label>
+      <input type="text" id="hero-btn">
+      <button type="submit">Save Hero Section</button>
+      <div class="success-msg" id="hero-msg"></div>
+    </form>
+  </div>
+
+  <div class="section">
+    <h2>Services Section</h2>
+    <form id="services-form">
+      <label>Service 1 Title</label><input type="text" id="service1-title">
+      <label>Service 1 Description</label><textarea id="service1-desc" rows="2"></textarea>
+      <label>Service 2 Title</label><input type="text" id="service2-title">
+      <label>Service 2 Description</label><textarea id="service2-desc" rows="2"></textarea>
+      <label>Service 3 Title</label><input type="text" id="service3-title">
+      <label>Service 3 Description</label><textarea id="service3-desc" rows="2"></textarea>
+      <label>Service 4 Title</label><input type="text" id="service4-title">
+      <label>Service 4 Description</label><textarea id="service4-desc" rows="2"></textarea>
+      <button type="submit">Save Services</button>
+      <div class="success-msg" id="services-msg"></div>
+    </form>
+  </div>
+
+  <div class="section">
+    <h2>About Section</h2>
+    <form id="about-form">
+      <label>Title</label><input type="text" id="about-title">
+      <label>Description</label><textarea id="about-desc" rows="3"></textarea>
+      <button type="submit">Save About Section</button>
+      <div class="success-msg" id="about-msg"></div>
+    </form>
+  </div>
+
+  <div class="section">
+    <h2>Contact Section</h2>
+    <form id="contact-form">
+      <label>Title</label><input type="text" id="contact-title">
+      <label>Description</label><textarea id="contact-desc" rows="3"></textarea>
+      <label>Button Text</label><input type="text" id="contact-btn">
+      <button type="submit">Save Contact Section</button>
+      <div class="success-msg" id="contact-msg"></div>
+    </form>
+  </div>
+
+  <div class="section">
+    <h2>Footer Section</h2>
+    <form id="footer-form">
+      <label>Footer Text</label><input type="text" id="footer-text">
+      <button type="submit">Save Footer</button>
+      <div class="success-msg" id="footer-msg"></div>
+    </form>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
+import { getDatabase, ref, set, get, child } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
+
+const firebaseConfig = {
+    apiKey: "AIzaSyAqhLfmOfmP-_8DOcoEH7Ck7fMF9Id4vJ4",
+    authDomain: "earn-project-5f892.firebaseapp.com",
+    databaseURL: "https://earn-project-5f892-default-rtdb.firebaseio.com/",
+    projectId: "earn-project-5f892",
+    storageBucket: "earn-project-5f892.firebasestorage.app",
+    messagingSenderId: "8457886057",
+    appId: "1:8457886057:web:b5e01d0972d169f47085f8"
+  };
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+// Save to Firebase helper
+function save(path, data, msgEl){
+  set(ref(db, path), data)
+    .then(()=>{ msgEl.innerText = "Saved successfully!"; setTimeout(()=>msgEl.innerText="",3000); })
+    .catch(err=>{ msgEl.innerText = "Error: "+err.message; });
+}
+
+// Load existing data
+async function load(path){
+  try{
+    const snap = await get(child(ref(db), path));
+    return snap.exists() ? snap.val() : null;
+  }catch(e){ console.error(e); return null; }
+}
+
+// ---------- Load all fields ----------
+async function populateForm(){
+  const hero = await load('hero'); if(hero){ document.getElementById('hero-title').value=hero.title||''; document.getElementById('hero-desc').value=hero.desc||''; document.getElementById('hero-btn').value=hero.button||''; }
+  const services = await load('services'); if(services){
+    ['service1','service2','service3','service4'].forEach(s=>{
+      if(services[s]){ document.getElementById(s+'-title').value = services[s].title||''; document.getElementById(s+'-desc').value=services[s].desc||''; }
+    });
+  }
+  const about = await load('about'); if(about){ document.getElementById('about-title').value=about.title||''; document.getElementById('about-desc').value=about.desc||''; }
+  const contact = await load('contact'); if(contact){ document.getElementById('contact-title').value=contact.title||''; document.getElementById('contact-desc').value=contact.desc||''; document.getElementById('contact-btn').value=contact.button||''; }
+  const footer = await load('footer'); if(footer){ document.getElementById('footer-text').value = footer; }
+}
+populateForm();
+
+// ---------- Form Submit ----------
+document.getElementById('hero-form').addEventListener('submit', e=>{ e.preventDefault(); save('hero',{title:document.getElementById('hero-title').value,desc:document.getElementById('hero-desc').value,button:document.getElementById('hero-btn').value}, document.getElementById('hero-msg')); });
+document.getElementById('services-form').addEventListener('submit', e=>{ e.preventDefault(); save('services',{
+  service1:{title:document.getElementById('service1-title').value,desc:document.getElementById('service1-desc').value},
+  service2:{title:document.getElementById('service2-title').value,desc:document.getElementById('service2-desc').value},
+  service3:{title:document.getElementById('service3-title').value,desc:document.getElementById('service3-desc').value},
+  service4:{title:document.getElementById('service4-title').value,desc:document.getElementById('service4-desc').value},
+}, document.getElementById('services-msg')); });
+document.getElementById('about-form').addEventListener('submit', e=>{ e.preventDefault(); save('about',{title:document.getElementById('about-title').value,desc:document.getElementById('about-desc').value}, document.getElementById('about-msg')); });
+document.getElementById('contact-form').addEventListener('submit', e=>{ e.preventDefault(); save('contact',{title:document.getElementById('contact-title').value,desc:document.getElementById('contact-desc').value,button:document.getElementById('contact-btn').value}, document.getElementById('contact-msg')); });
+document.getElementById('footer-form').addEventListener('submit', e=>{ e.preventDefault(); save('footer',document.getElementById('footer-text').value, document.getElementById('footer-msg')); });
+</script>
+
+</body>
+</html>

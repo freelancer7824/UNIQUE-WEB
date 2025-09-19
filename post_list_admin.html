@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Panel - Manage Posts & Projects</title>
+<style>
+body { font-family: Arial, sans-serif; background: #f4f4f9; margin: 0; padding: 0; }
+.container { max-width: 95%; margin: 20px auto; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); overflow-x: auto; }
+h2 { text-align: center; margin-bottom: 20px; font-size: 1.5rem; }
+table { width: 100%; border-collapse: collapse; margin-top: 20px; min-width: 400px; }
+th, td { border: 1px solid #ddd; padding: 8px; text-align: center; font-size: 0.9rem; vertical-align: middle; }
+th { background: #007BFF; color: #fff; font-size: 0.95rem; }
+img { width: 60px; height: 60px; object-fit: cover; border-radius: 5px; }
+button { padding: 5px 8px; margin: 2px; border: none; border-radius: 5px; cursor: pointer; font-size: 0.8rem; }
+.edit { background: #28a745; color: #fff; }
+.delete { background: #dc3545; color: #fff; }
+.delete-selected { background: #ff5722; color: #fff; margin-bottom: 10px; padding: 8px 12px; font-size: 0.9rem; }
+.default-like-btn { background: #0d47a1; color: #fff; }
+#postCount { font-weight: bold; margin-top: 10px; font-size: 1rem; }
+#filterSelect { padding: 5px 8px; margin-bottom: 10px; font-size: 0.9rem; }
+
+/* Mobile: show only Title, Image, Actions */
+@media screen and (max-width: 768px) {
+  th:nth-child(1), th:nth-child(2), th:nth-child(3), th:nth-child(5), th:nth-child(7) { display: none; }
+  td:nth-child(1), td:nth-child(2), td:nth-child(3), td:nth-child(5), td:nth-child(7) { display: none; }
+  table { min-width: 100%; }
+  img { width: 50px; height: 50px; }
+  button { font-size: 0.75rem; padding: 4px 6px; }
+}
+@media screen and (max-width: 480px) {
+  img { width: 40px; height: 40px; }
+  button { font-size: 0.7rem; padding: 3px 5px; }
+  h2 { font-size: 1.3rem; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <h2>Admin Panel - Manage Posts & Projects</h2>
+  <select id="filterSelect">
+    <option value="posts">Posts</option>
+    <option value="projects">Projects</option>
+  </select>
+  <button class="delete-selected" onclick="deleteSelected()">Delete Selected</button>
+  <div id="postCount">Total Items: 0</div>
+  <table id="postsTable">
+    <thead>
+      <tr>
+        <th><input type="checkbox" id="selectAll" onchange="toggleSelectAll(this)"/></th>
+        <th>Author</th>
+        <th>Photo</th>
+        <th>Title</th>
+        <th>Content</th>
+        <th>Image</th>
+        <th>Date</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
+import { getDatabase, ref, onValue, remove, update, get } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
+
+// Firebase config
+const firebaseConfig = {
+  apiKey: "AIzaSyAqhLfmOfmP-_8DOcoEH7Ck7fMF9Id4vJ4",
+  authDomain: "earn-project-5f892.firebaseapp.com",
+  databaseURL: "https://earn-project-5f892-default-rtdb.firebaseio.com/",
+  projectId: "earn-project-5f892",
+  storageBucket: "earn-project-5f892.appspot.com",
+  messagingSenderId: "8457886057",
+  appId: "1:8457886057:web:b5e01d0972d169f47085f8"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+const postsTableBody = document.querySelector("#postsTable tbody");
+const postCountEl = document.getElementById("postCount");
+const filterSelect = document.getElementById("filterSelect");
+
+// --- Make loadItems global ---
+window.loadItems = function() {
+  const selectedType = filterSelect.value; // posts or projects
+  const dataRef = ref(db, selectedType);
+
+  onValue(dataRef, snapshot => {
+    const items = snapshot.val() || {};
+    postsTableBody.innerHTML = "";
+    let count = 0;
+
+    // Convert object to array and sort newest first
+    const itemsArray = Object.entries(items).sort((a, b) => {
+      const dateA = new Date(a[1].date || 0);
+      const dateB = new Date(b[1].date || 0);
+      return dateB - dateA; // newest first
+    });
+
+    itemsArray.forEach(([key, item]) => {
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td><input type="checkbox" class="selectPost" data-id="${key}"></td>
+        <td>${item.author || ""}</td>
+        <td>${item.authorPhoto ? `<img src="${item.authorPhoto}">` : ""}</td>
+        <td>${item.title || ""}</td>
+        <td>${item.content || ""}</td>
+        <td>${item.image ? `<img src="${item.image}">` : ""}</td>
+        <td>${item.date || ""}</td>
+        <td>
+          <button class="edit" onclick="editItem('${selectedType}','${key}')">Edit</button>
+          <button class="delete" onclick="deleteItem('${selectedType}','${key}')">Delete</button>
+          <button class="default-like-btn" onclick="setDefaultLikesComments('${selectedType}','${key}')">Set Defaults</button>
+        </td>
+      `;
+      postsTableBody.appendChild(row);
+      count++;
+    });
+
+    postCountEl.textContent = `Total ${selectedType.charAt(0).toUpperCase()+selectedType.slice(1)}: ${count}`;
+  });
+}
+
+// --- All other functions also global ---
+window.deleteItem = function(refPath, key){
+  if(confirm("Are you sure you want to delete this item?")) remove(ref(db, `${refPath}/${key}`));
+}
+
+window.editItem = async function(refPath, key){
+  const itemRef = ref(db, `${refPath}/${key}`);
+  const snapshot = await get(itemRef);
+  if(snapshot.exists()){
+    const item = snapshot.val();
+    const newTitle = prompt("Edit Title:", item.title || "") || item.title;
+    const newContent = prompt("Edit Content:", item.content || "") || item.content;
+    update(itemRef, { title: newTitle, content: newContent });
+  }
+}
+
+window.deleteSelected = function(){
+  const checkboxes = document.querySelectorAll(".selectPost:checked");
+  if(checkboxes.length === 0) return alert("No items selected!");
+  if(!confirm(`Delete ${checkboxes.length} selected items?`)) return;
+  const selectedType = filterSelect.value;
+  checkboxes.forEach(cb => remove(ref(db, `${selectedType}/${cb.dataset.id}`)));
+}
+
+window.toggleSelectAll = function(master){
+  const checkboxes = document.querySelectorAll(".selectPost");
+  checkboxes.forEach(cb => cb.checked = master.checked);
+}
+
+window.setDefaultLikesComments = async function(refPath, key){
+  const itemRef = ref(db, `${refPath}/${key}`);
+  const snapshot = await get(itemRef);
+  if(snapshot.exists()){
+    const item = snapshot.val();
+    const defaultLikes = prompt("Set Default Likes:", item.likes || 0);
+    const comments = prompt("Set Default Comments (comma separated):", (item.comments||[]).join(", "));
+    const commentsArray = comments.split(",").map(c=>c.trim()).filter(c=>c.length>0);
+    update(itemRef, { likes: Number(defaultLikes), comments: commentsArray });
+    alert("Defaults updated successfully!");
+  }
+}
+
+// --- Load items when filter changes ---
+filterSelect.addEventListener("change", loadItems);
+
+// --- Initial load ---
+loadItems();
+</script>
+</body>
+</html>

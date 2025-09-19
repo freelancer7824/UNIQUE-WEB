@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Panel - Manage Options</title>
+
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+<!-- Font Awesome Icons -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+<style>
+body {
+  font-family: 'Poppins', sans-serif;
+  background: #f4f5f7;
+  margin: 0;
+  padding: 20px;
+}
+
+h1 {
+  text-align: center;
+  margin-bottom: 25px;
+  font-size: 1.8rem;
+  color: #1a237e;
+}
+
+form {
+  background: #fff;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  max-width: 600px;
+  margin: 0 auto 30px auto;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+form input {
+  width: 100%;
+  padding: 12px 15px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  font-size: 1rem;
+  box-sizing: border-box;
+  word-break: break-word;
+}
+
+form button {
+  width: 100%;
+  padding: 12px;
+  background: #1a237e;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 1rem;
+  transition: 0.3s;
+}
+
+form button:hover {
+  background: #0d47a1;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+}
+
+th, td {
+  padding: 12px 15px;
+  border-bottom: 1px solid #ddd;
+  text-align: left;
+  vertical-align: top;
+  word-wrap: break-word; /* Wrap long text */
+  max-width: 1px; /* Needed for wrapping inside table cells */
+}
+
+th {
+  background: #1a237e;
+  color: #fff;
+  font-weight: 600;
+}
+
+td button {
+  margin: 5px 5px 0 0;
+  padding: 6px 12px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  color: #fff;
+  font-size: 0.85rem;
+  transition: 0.3s;
+  white-space: nowrap;
+}
+
+.edit-btn { background: #42a5f5; }
+.edit-btn:hover { background: #1e88e5; }
+
+.delete-btn { background: #ef5350; }
+.delete-btn:hover { background: #e53935; }
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  h1 { font-size: 1.6rem; }
+  form { padding: 15px; }
+  form input, form button { font-size: 0.95rem; padding: 10px; }
+  th, td { padding: 10px 8px; font-size: 0.9rem; }
+}
+
+@media (max-width: 480px) {
+  h1 { font-size: 1.4rem; }
+  form { padding: 12px; }
+  form input, form button { padding: 8px; font-size: 0.9rem; }
+  td button { padding: 5px 8px; font-size: 0.8rem; }
+}
+</style>
+</head>
+<body>
+
+<h1>Admin Panel - Manage Options</h1>
+
+<form id="optionForm">
+  <input type="text" id="title" placeholder="Option Title" required>
+  <input type="text" id="url" placeholder="Option URL" required>
+  <button type="submit">Add Option</button>
+</form>
+
+<table>
+  <thead>
+    <tr>
+      <th>Title</th>
+      <th>URL</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody id="optionList">
+    <!-- Options will load here -->
+  </tbody>
+</table>
+
+<!-- Firebase -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
+import { getDatabase, ref, push, set, onValue, update, remove } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAqhLfmOfmP-_8DOcoEH7Ck7fMF9Id4vJ4",
+  authDomain: "earn-project-5f892.firebaseapp.com",
+  databaseURL: "https://earn-project-5f892-default-rtdb.firebaseio.com/",
+  projectId: "earn-project-5f892",
+  storageBucket: "earn-project-5f892.firebasestorage.app",
+  messagingSenderId: "8457886057",
+  appId: "1:8457886057:web:b5e01d0972d169f47085f8"
+};
+
+const app = initializeApp(firebaseConfig);
+const database = getDatabase(app);
+
+const optionForm = document.getElementById('optionForm');
+const titleInput = document.getElementById('title');
+const urlInput = document.getElementById('url');
+const optionList = document.getElementById('optionList');
+let editId = null;
+
+optionForm.addEventListener('submit', (e) => {
+  e.preventDefault();
+  const title = titleInput.value.trim();
+  const url = urlInput.value.trim();
+  if(title === "" || url === "") return;
+
+  if(editId){
+    update(ref(database, 'options/' + editId), {title,url});
+    editId = null;
+  } else {
+    const newOptionRef = push(ref(database, 'options'));
+    set(newOptionRef, {title,url});
+  }
+  optionForm.reset();
+});
+
+const optionsRef = ref(database, 'options');
+onValue(optionsRef, (snapshot) => {
+  optionList.innerHTML = "";
+  const options = snapshot.val();
+  for(const key in options){
+    if(options.hasOwnProperty(key)){
+      const opt = options[key];
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${opt.title}</td>
+        <td>${opt.url}</td>
+        <td>
+          <button class="edit-btn">Edit</button>
+          <button class="delete-btn">Delete</button>
+        </td>
+      `;
+      tr.querySelector('.edit-btn').addEventListener('click', () => {
+        titleInput.value = opt.title;
+        urlInput.value = opt.url;
+        editId = key;
+      });
+      tr.querySelector('.delete-btn').addEventListener('click', () => {
+        if(confirm("Are you sure to delete this option?")){
+          remove(ref(database, 'options/' + key));
+        }
+      });
+      optionList.appendChild(tr);
+    }
+  }
+});
+</script>
+
+</body>
+</html>

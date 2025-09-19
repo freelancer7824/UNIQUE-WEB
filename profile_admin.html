@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Panel</title>
+<style>
+body{font-family:Poppins,sans-serif;background:#f0f2f5;padding:20px;}
+.container{max-width:600px;margin:0 auto;background:#fff;padding:20px;border-radius:10px;box-shadow:0 4px 15px rgba(0,0,0,0.1);}
+input,textarea,button{width:100%;padding:8px;margin:8px 0;border-radius:5px;border:1px solid #ccc;}
+button{background:#1877f2;color:#fff;border:none;cursor:pointer;}
+label{font-weight:600;display:block;margin-top:10px;}
+</style>
+</head>
+<body>
+<div class="container">
+<h2>Admin Panel</h2>
+<label>Name</label><input type="text" id="name">
+<label>Description</label><textarea id="description"></textarea>
+<label>Profile Image</label><input type="file" id="profileImgFile">
+<label>Cover Image</label><input type="file" id="coverFile">
+<label>Followers</label><input type="number" id="followers">
+<label>Following</label><input type="number" id="following">
+<label>Email</label><input type="text" id="email" placeholder="email@example.com">
+<label>Phone</label><input type="text" id="phone" placeholder="+8801234567890">
+<label>Facebook URL</label><input type="text" id="facebook" placeholder="https://facebook.com/...">
+<label>Twitter URL</label><input type="text" id="twitter" placeholder="https://twitter.com/...">
+<label>LinkedIn URL</label><input type="text" id="linkedin" placeholder="https://linkedin.com/...">
+<button id="saveBtn">Save</button>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
+import { getDatabase, ref, set, get, child } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
+
+// Firebase config
+const firebaseConfig = {
+  apiKey: "AIzaSyAqhLfmOfmP-_8DOcoEH7Ck7fMF9Id4vJ4",
+  authDomain: "earn-project-5f892.firebaseapp.com",
+  databaseURL: "https://earn-project-5f892-default-rtdb.firebaseio.com/",
+  projectId: "earn-project-5f892",
+  storageBucket: "earn-project-5f892.firebasestorage.app",
+  messagingSenderId: "8457886057",
+  appId: "1:8457886057:web:b5e01d0972d169f47085f8"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+// Cloudinary Upload
+function uploadToCloudinary(file, callback){
+  const url = "https://api.cloudinary.com/v1_1/dhvtgzy5x/image/upload";
+  const preset = "Rosenews";
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("upload_preset", preset);
+
+  fetch(url, { method: "POST", body: formData })
+    .then(res => res.json())
+    .then(data => callback(data.secure_url))
+    .catch(err => alert("Upload failed"));
+}
+
+// Load existing profile from Firebase
+window.addEventListener('DOMContentLoaded', () => {
+  const profileRef = ref(db, 'profile');
+  get(profileRef).then(snapshot => {
+    if(snapshot.exists()){
+      const data = snapshot.val();
+      document.getElementById('name').value = data.name || '';
+      document.getElementById('description').value = data.description || '';
+      document.getElementById('followers').value = data.followers || 0;
+      document.getElementById('following').value = data.following || 0;
+
+      const contacts = data.contacts || [];
+      contacts.forEach(c => {
+        if(c.icon.includes('envelope')) document.getElementById('email').value = c.value || '';
+        if(c.icon.includes('phone')) document.getElementById('phone').value = c.value || '';
+        if(c.icon.includes('facebook')) document.getElementById('facebook').value = c.link || '';
+        if(c.icon.includes('twitter')) document.getElementById('twitter').value = c.link || '';
+        if(c.icon.includes('linkedin')) document.getElementById('linkedin').value = c.link || '';
+      });
+    }
+  }).catch(err => console.error(err));
+});
+
+// Save Button
+document.getElementById('saveBtn').addEventListener('click', () => {
+  const name = document.getElementById('name').value.trim();
+  const description = document.getElementById('description').value.trim();
+  const followers = parseInt(document.getElementById('followers').value) || 0;
+  const following = parseInt(document.getElementById('following').value) || 0;
+
+  const email = document.getElementById('email').value.trim();
+  const phone = document.getElementById('phone').value.trim();
+  const facebook = document.getElementById('facebook').value.trim();
+  const twitter = document.getElementById('twitter').value.trim();
+  const linkedin = document.getElementById('linkedin').value.trim();
+
+  const profileFile = document.getElementById('profileImgFile').files[0];
+  const coverFile = document.getElementById('coverFile').files[0];
+
+  // Function to save to Firebase
+  function saveProfile(profileUrl, coverUrl){
+    const profileData = {
+      name,
+      description,
+      followers,
+      following,
+      profileImg: profileUrl || '', // keep existing if not updated
+      cover: coverUrl || '',
+      contacts: [
+        { icon: "fas fa-envelope", value: email, link: "mailto:" + email },
+        { icon: "fas fa-phone", value: phone, link: "tel:" + phone },
+        { icon: "fab fa-facebook", value: "Facebook", link: facebook },
+        { icon: "fab fa-twitter", value: "Twitter", link: twitter },
+        { icon: "fab fa-linkedin", value: "LinkedIn", link: linkedin }
+      ]
+    };
+    set(ref(db, 'profile'), profileData)
+      .then(() => alert("Profile updated successfully!"))
+      .catch(err => alert("Error: " + err));
+  }
+
+  // Handle uploads
+  if(profileFile && coverFile){
+    uploadToCloudinary(profileFile, profileUrl => {
+      uploadToCloudinary(coverFile, coverUrl => {
+        saveProfile(profileUrl, coverUrl);
+      });
+    });
+  } else if(profileFile || coverFile){
+    const profileRef = ref(db, 'profile');
+    get(profileRef).then(snapshot => {
+      if(snapshot.exists()){
+        const data = snapshot.val();
+        const profileUrl = profileFile ? null : data.profileImg;
+        const coverUrl = coverFile ? null : data.cover;
+        if(profileFile) {
+          uploadToCloudinary(profileFile, pUrl => {
+            saveProfile(pUrl, coverUrl);
+          });
+        } else if(coverFile) {
+          uploadToCloudinary(coverFile, cUrl => {
+            saveProfile(profileUrl, cUrl);
+          });
+        }
+      }
+    });
+  } else {
+    // No files selected, keep existing
+    const profileRef = ref(db, 'profile');
+    get(profileRef).then(snapshot => {
+      const data = snapshot.exists() ? snapshot.val() : {};
+      saveProfile(data.profileImg || '', data.cover || '');
+    });
+  }
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Home – Web Development Project</title>
+
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+<!-- Font Awesome -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Poppins',sans-serif;background:#f5f7fa;color:#333;overflow-x:hidden;}
+.hero{background:linear-gradient(to right,#0d47a1,#1976d2);color:white;text-align:center;padding:120px 20px;}
+.hero h1{font-size:48px;font-weight:700;margin-bottom:20px;}
+.hero p{font-size:20px;max-width:700px;margin:0 auto 40px;}
+.hero a{background:#90caf9;color:#0d47a1;padding:14px 30px;font-weight:600;text-decoration:none;border-radius:30px;transition:background 0.3s;}
+.hero a:hover{background:#e3f2fd;}
+.services{max-width:1200px;margin:80px auto;padding:0 20px;display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:30px;}
+.service-card{background:#fff;padding:40px 25px;text-align:center;border-radius:12px;box-shadow:0 4px 10px rgba(0,0,0,0.1);transition:transform 0.3s ease, box-shadow 0.3s ease;}
+.service-card:hover{transform:translateY(-8px);box-shadow:0 8px 20px rgba(0,0,0,0.15);}
+.service-card i{font-size:40px;color:#0d47a1;margin-bottom:20px;}
+.service-card h3{font-size:22px;margin-bottom:12px;}
+.service-card p{font-size:16px;color:#555;}
+.about{background:#e8eaf6;padding:80px 20px;text-align:center;}
+.about h2{font-size:32px;margin-bottom:20px;font-weight:700;}
+.about p{max-width:800px;margin:0 auto;font-size:18px;color:#444;}
+.contact{background:#0d47a1;color:white;padding:60px 20px;text-align:center;}
+.contact h2{font-size:32px;margin-bottom:20px;}
+.contact p{font-size:18px;margin-bottom:30px;}
+.contact a{display:inline-block;background:#90caf9;color:#0d47a1;padding:12px 28px;text-decoration:none;font-weight:600;border-radius:30px;transition:background 0.3s;}
+.contact a:hover{background:#e3f2fd;}
+footer{background:#1a237e;color:#c5cae9;text-align:center;padding:20px 10px;font-size:14px;}
+@media(max-width:600px){.hero h1{font-size:34px;}.hero p{font-size:18px;}}
+</style>
+</head>
+<body>
+
+<section class="hero">
+  <h1 id="hero-title">Building Modern & Responsive Websites</h1>
+  <p id="hero-desc">We create fast, scalable, and beautiful web applications tailored to your business needs.</p>
+  <a id="hero-btn" href="#services">Get Started</a>
+</section>
+
+<section id="services" class="services">
+  <div class="service-card">
+    <i class="fas fa-laptop-code"></i>
+    <h3 id="service1-title">Web Development</h3>
+    <p id="service1-desc">High-quality, responsive websites built with modern technologies.</p>
+  </div>
+  <div class="service-card">
+    <i class="fas fa-mobile-alt"></i>
+    <h3 id="service2-title">Mobile Friendly</h3>
+    <p id="service2-desc">Fully responsive designs for perfect experience on all devices.</p>
+  </div>
+  <div class="service-card">
+    <i class="fas fa-paint-brush"></i>
+    <h3 id="service3-title">UI/UX Design</h3>
+    <p id="service3-desc">Clean and modern user interface with smooth user experience.</p>
+  </div>
+  <div class="service-card">
+    <i class="fas fa-cloud"></i>
+    <h3 id="service4-title">Cloud Integration</h3>
+    <p id="service4-desc">Scalable cloud solutions to support your growing business.</p>
+  </div>
+</section>
+
+<section class="about">
+  <h2 id="about-title">About Our Team</h2>
+  <p id="about-desc">We are a passionate group of developers and designers dedicated to building professional, scalable and secure websites. Our mission is to deliver the best digital solutions that help businesses grow online.</p>
+</section>
+
+<section class="contact">
+  <h2 id="contact-title">Let's Work Together</h2>
+  <p id="contact-desc">Ready to start your next project? Get in touch with us today!</p>
+  <a id="contact-btn" href="mailto:info@webdevagency.com"><i class="fas fa-envelope"></i> Contact Us</a>
+</section>
+
+<footer id="footer-text">&copy; 2025 WebDev Project. All Rights Reserved.</footer>
+
+<!-- Firebase Modular SDK -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
+  import { getDatabase, ref, get, child } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAqhLfmOfmP-_8DOcoEH7Ck7fMF9Id4vJ4",
+    authDomain: "earn-project-5f892.firebaseapp.com",
+    databaseURL: "https://earn-project-5f892-default-rtdb.firebaseio.com/",
+    projectId: "earn-project-5f892",
+    storageBucket: "earn-project-5f892.firebasestorage.app",
+    messagingSenderId: "8457886057",
+    appId: "1:8457886057:web:b5e01d0972d169f47085f8"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+
+  async function loadText(path, elementId, defaultText){
+    try{
+      const snapshot = await get(child(ref(db), path));
+      const val = snapshot.exists() ? snapshot.val() : defaultText;
+      document.getElementById(elementId).innerHTML = val;
+    } catch(err){
+      console.error(err);
+      document.getElementById(elementId).innerHTML = defaultText;
+    }
+  }
+
+  // Load all sections
+  loadText('hero/title','hero-title','Building Modern & Responsive Websites');
+  loadText('hero/desc','hero-desc','We create fast, scalable, and beautiful web applications tailored to your business needs.');
+  loadText('hero/button','hero-btn','Get Started');
+
+  loadText('services/service1/title','service1-title','Web Development');
+  loadText('services/service1/desc','service1-desc','High-quality, responsive websites built with modern technologies.');
+  loadText('services/service2/title','service2-title','Mobile Friendly');
+  loadText('services/service2/desc','service2-desc','Fully responsive designs for perfect experience on all devices.');
+  loadText('services/service3/title','service3-title','UI/UX Design');
+  loadText('services/service3/desc','service3-desc','Clean and modern user interface with smooth user experience.');
+  loadText('services/service4/title','service4-title','Cloud Integration');
+  loadText('services/service4/desc','service4-desc','Scalable cloud solutions to support your growing business.');
+
+  loadText('about/title','about-title','About Our Team');
+  loadText('about/desc','about-desc','We are a passionate group of developers and designers dedicated to building professional, scalable and secure websites. Our mission is to deliver the best digital solutions that help businesses grow online.');
+
+  loadText('contact/title','contact-title',"Let's Work Together");
+  loadText('contact/desc','contact-desc','Ready to start your next project? Get in touch with us today!');
+  loadText('contact/button','contact-btn','Contact Us');
+
+  loadText('footer','footer-text','&copy; 2025 WebDev Project. All Rights Reserved.');
+</script>
+
+</body>
+</html>
